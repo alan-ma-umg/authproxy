@@ -14,20 +14,22 @@ import (
 	"github.com/gorilla/mux"
 )
 
-var (
-	target    = flag.String("target", "http://target", "XAP proxy server to connect to")
-	clientID  = flag.String("clientId", "bc5bd1c6-ee3d-4200-af33-c27d8c1289b5", "APP client id")
-	port      = flag.Int("port", 8488, "port to listen on")
-	authToken = "invalid"
-)
-
 type authTokenJSON struct {
-	AccessToken string `json:"access_token"`
-	TokenType   string `json:"token_type"`
-	Scope       string `json:"scope"`
-	ExpiresIn   int    `json:"expires_in"`
-	Error       string `json:"error"`
+	AccessToken  string `json:"access_token"`
+	IDToken      string `json:"id_token"`
+	RefreshToken string `json:"refresh_token"`
+	TokenType    string `json:"token_type"`
+	Scope        string `json:"scope"`
+	ExpiresIn    int    `json:"expires_in"`
+	Error        string `json:"error"`
 }
+
+var (
+	target       = flag.String("target", "http://target", "XAP proxy server to connect to")
+	clientID     = flag.String("clientId", "bc5bd1c6-ee3d-4200-af33-c27d8c1289b5", "APP client id")
+	port         = flag.Int("port", 8488, "port to listen on")
+	currentToken authTokenJSON
+)
 
 func login(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "https://login.microsoftonline.com/microsoft.com/oauth2/v2.0/authorize?"+
@@ -70,19 +72,17 @@ func auth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Println("Body: " + string(body))
-	var parsedToken authTokenJSON
-	parseErr := json.Unmarshal(body, &parsedToken)
+	parseErr := json.Unmarshal(body, &currentToken)
 	if parseErr != nil {
 		log.Println("Could not parse access token: " + parseErr.Error())
-	} else {
-		authToken = parsedToken.AccessToken
 	}
 
 	http.Redirect(w, r, "/status", http.StatusTemporaryRedirect)
 }
 
 func status(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(fmt.Sprintf("<html>Token: %s</html>", authToken)))
+	bytes, _ := json.Marshal(currentToken)
+	w.Write([]byte(fmt.Sprintf("<html>Token: %s</html>", string(bytes))))
 }
 
 func proxyHandler(p *httputil.ReverseProxy, url *url.URL) func(http.ResponseWriter, *http.Request) {
@@ -91,7 +91,7 @@ func proxyHandler(p *httputil.ReverseProxy, url *url.URL) func(http.ResponseWrit
 		r.URL.Scheme = url.Scheme
 		r.Header.Set("X-Forwarded-Host", r.Header.Get("Host"))
 		r.Host = url.Host
-		r.Header.Set("Authentication", "Bearer "+authToken)
+		r.Header.Set("Authentication", "Bearer "+currentToken.AccessToken)
 		r.URL.Path = mux.Vars(r)["rest"]
 		log.Printf("Proxy to %s\n", r.URL.String())
 
