@@ -91,7 +91,7 @@ func proxyHandler(p *httputil.ReverseProxy, url *url.URL) func(http.ResponseWrit
 		r.URL.Scheme = url.Scheme
 		r.Header.Set("X-Forwarded-Host", r.Header.Get("Host"))
 		r.Host = url.Host
-		r.Header.Set("Authentication", "Bearer "+currentToken.AccessToken)
+		r.Header.Set("Authentication", "Bearer "+currentToken.IDToken)
 		r.URL.Path = mux.Vars(r)["rest"]
 		log.Printf("Proxy to %s\n", r.URL.String())
 
