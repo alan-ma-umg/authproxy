@@ -25,7 +25,7 @@ type authTokenJSON struct {
 }
 
 var (
-	target       = flag.String("target", "http://target", "OAuth server to connect to")
+	target       = flag.String("target", "https://localhost:8884", "OAuth server to connect to")
 	clientID     = flag.String("clientId", "bc5bd1c6-ee3d-4200-af33-c27d8c1289b5", "APP client id")
 	port         = flag.Int("port", 8488, "port to listen on")
 	currentToken authTokenJSON
@@ -39,7 +39,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 		//"&redirect_uri=https%3A%2F%2Flogin.microsoftonline.com%2Fcommon%2Foauth2%2Fnativeclient"+
 		"&response_mode=query"+
 		// "&prompt=consent"+
-		"&scope=openid%20offline_access"+
+		"&scope=openid%20offline_access%20https%3A%2F%2Fgraph.microsoft.com%2Fuser.read"+
 		"&state=12345", http.StatusTemporaryRedirect)
 
 }
@@ -54,7 +54,7 @@ func auth(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := http.PostForm("https://login.microsoftonline.com/microsoft.com/oauth2/v2.0/token", url.Values{
 		"client_id": {*clientID},
-		"scope":     {"openid offline_access"},
+		"scope":     {"https://graph.microsoft.com/user.read"},
 		"code":      {newCode[0]},
 		//"redirect_uri": {"https://login.microsoftonline.com/common/oauth2/nativeclient"},
 		"redirect_uri": {"http://localhost:" + fmt.Sprintf("%d", *port) + "/auth"},

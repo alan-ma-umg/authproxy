@@ -16,12 +16,14 @@ import (
 )
 
 var (
-	keyInfoURL = flag.String("keyInfoURL", "https://login.microsoftonline.com/72f988bf-86f1-41af-91ab-2d7cd011db47/discovery/v2.0/keys", "URL with JWT key info")
-	target     = flag.String("target", "http://target", "Back end server to connect to")
-	port       = flag.Int("port", 8884, "port to listen on")
-	clientID   = flag.String("clientId", "bc5bd1c6-ee3d-4200-af33-c27d8c1289b5", "APP client id")
-	provider   *oidc.Provider
-	verifier   *oidc.IDTokenVerifier
+	providerURL = flag.String("provider", "https://login.microsoftonline.com/72f988bf-86f1-41af-91ab-2d7cd011db47/v2.0", "provider")
+	target      = flag.String("target", "http://ifconfig.co", "Back end server to connect to")
+	port        = flag.Int("port", 8884, "port to listen on")
+	clientID    = flag.String("clientId", "bc5bd1c6-ee3d-4200-af33-c27d8c1289b5", "APP client id")
+	certFile    = flag.String("certFile", "cert.pem", "Cert file for TLS (default: cert.pem)")
+	keyFile     = flag.String("keyFile", "key.pem", "Private key file for TLS (default: key.pem)")
+	provider    *oidc.Provider
+	verifier    *oidc.IDTokenVerifier
 )
 
 var claims struct {
@@ -73,7 +75,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	provider, err = oidc.NewProvider(context.Background(), "https://login.microsoftonline.com/72f988bf-86f1-41af-91ab-2d7cd011db47/v2.0")
+	provider, err = oidc.NewProvider(context.Background(), *providerURL)
 	if err != nil {
 		log.Fatalf("Error creating oidc provider: %v", err)
 	}
@@ -92,5 +94,5 @@ func main() {
 		ReadTimeout:  15 * time.Second,
 	}
 
-	log.Fatal(srv.ListenAndServe())
+	log.Fatal(srv.ListenAndServeTLS(*certFile, *keyFile))
 }
